@@ -8,6 +8,33 @@ const api = axios.create({
   timeout: 30000,
 });
 
+// Token helpers (localStorage fallback for Safari/mobile)
+const getToken = () => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('accessToken');
+};
+const getRefreshToken = () => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('refreshToken');
+};
+export const saveTokens = (access, refresh) => {
+  if (typeof window === 'undefined') return;
+  if (access) localStorage.setItem('accessToken', access);
+  if (refresh) localStorage.setItem('refreshToken', refresh);
+};
+export const clearTokens = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+};
+
+// Add Authorization header from localStorage on every request
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers['Authorization'] = `Bearer ${token}`;
+  return config;
+});
+
 // Auto-refresh on 401
 let isRefreshing = false;
 let queue = [];
@@ -31,11 +58,21 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.post('/auth/refresh');
+        const refreshToken = getRefreshToken();
+        const res = await axios.post(
+          `${API_URL}/api/auth/refresh`,
+          {},
+          {
+            withCredentials: true,
+            headers: refreshToken ? { Authorization: `Bearer ${refreshToken}` } : {},
+          }
+        );
+        if (res.data.accessToken) saveTokens(res.data.accessToken, res.data.refreshToken);
         processQueue(null);
         return api(original);
       } catch (refreshErr) {
         processQueue(refreshErr);
+        clearTokens();
         if (typeof window !== 'undefined') window.location.href = '/login';
         return Promise.reject(refreshErr);
       } finally {

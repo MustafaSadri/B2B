@@ -57,6 +57,8 @@ router.post(
         .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
         .json({
           success: true,
+          accessToken,
+          refreshToken,
           user: {
             id: user._id,
             role: user.role,
@@ -74,7 +76,10 @@ router.post(
 
 // POST /api/auth/refresh
 router.post('/refresh', async (req, res) => {
-  const token = req.cookies?.refreshToken;
+  let token = req.cookies?.refreshToken;
+  if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
   if (!token) return res.status(401).json({ success: false, message: 'No refresh token.' });
 
   try {
@@ -86,7 +91,7 @@ router.post('/refresh', async (req, res) => {
     res
       .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
       .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
-      .json({ success: true });
+      .json({ success: true, accessToken, refreshToken });
   } catch {
     res.status(401).json({ success: false, message: 'Invalid or expired refresh token.' });
   }

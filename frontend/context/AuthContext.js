@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import api from '../lib/api';
+import api, { saveTokens, clearTokens } from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -27,8 +27,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const { data } = await api.post('/auth/login', { username, password });
     if (data.success) {
+      saveTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
-      // Redirect based on role
       const redirects = { admin: '/admin', salesRep: '/sales-rep', customer: '/customer' };
       router.push(redirects[data.user.role] || '/');
     }
@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     await api.post('/auth/logout');
+    clearTokens();
     setUser(null);
     router.push('/login');
   };

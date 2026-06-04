@@ -12,12 +12,24 @@ const connectDB = require('./config/db');
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(helmet({ crossOriginEmbedderPolicy: false }));
 app.use(compression());
 app.use(morgan('dev'));
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (
+      !origin ||
+      origin === process.env.CLIENT_URL ||
+      origin === 'http://localhost:3000' ||
+      origin.endsWith('.vercel.app')
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
 }));

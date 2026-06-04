@@ -1,0 +1,12 @@
+{
+  "name": "b2b-platform",
+  "version": "1.0.0",
+  "description": "B2B E-Commerce Platform",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && node scripts/seed.js",
+    "seed:reps": "cd backend && node scripts/seedSalesReps.js"
+  }
+}
